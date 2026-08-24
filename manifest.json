@@ -1,0 +1,9 @@
+{
+  "id": "full-map-teleport",
+  "name": "Full Map Teleport",
+  "version": "1.0.2",
+  "author": "ABKQPO",
+  "description": "Right-click the full-screen map to teleport. Pylon and same-team map teleports ignore vanilla restrictions.",
+  "entry_dll": "FullMapTeleport.dll",
+  "multiplayer": "optional"
+}
