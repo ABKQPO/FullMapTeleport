@@ -4,10 +4,12 @@ using HarmonyLib;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.GameContent;
+using Terraria.Map;
 using TerrariaModder.Core;
 using TerrariaModder.Core.Config;
 using TerrariaModder.Core.Events;
 using TerrariaModder.Core.Logging;
+using FullMapTeleport.UI;
 
 namespace FullMapTeleport
 {
@@ -17,6 +19,9 @@ namespace FullMapTeleport
 
         [Client, Label("Enabled"), Description("Enable right-click map teleportation and unrestricted map icon teleportation.")]
         public bool Enabled { get; set; } = true;
+
+        [Client, Label("Reveal Full Map"), Description("Click once in F6 to reveal the entire map at maximum brightness.")]
+        public bool RevealFullMap { get; set; }
     }
 
     public sealed class Mod : IMod
@@ -26,6 +31,8 @@ namespace FullMapTeleport
         private ILogger _log;
         private Harmony _harmony;
         private bool _patchesApplied;
+        private FullMapTeleportPanel _panel;
+        private bool _revealRequestHandled;
 
         [ThreadStatic]
         private static bool _mapDrawActive;
@@ -36,7 +43,7 @@ namespace FullMapTeleport
 
         public string Id => "full-map-teleport";
         public string Name => "Full Map Teleport";
-        public string Version => "1.0.2";
+        public string Version => "1.1.1";
 
         private static FullMapTeleportConfig Current { get; set; }
         private static ILogger InstanceLog { get; set; }
@@ -50,7 +57,12 @@ namespace FullMapTeleport
 
             ApplyPatches(context.IsServer);
             if (!context.IsServer)
+            {
                 FrameEvents.OnPostUpdate += OnPostUpdate;
+                _panel = new FullMapTeleportPanel(RevealFullMap);
+                _panel.RegisterDrawCallback();
+                context.RegisterKeybind("toggle-panel", "Toggle Full Map Teleport Panel", "Open the map utility panel", "F7", TogglePanel);
+            }
             _log.Info($"{Name} v{Version} initialized");
         }
 
@@ -60,6 +72,9 @@ namespace FullMapTeleport
             RightClickLatch.Reset();
             _pendingTeleport = false;
             FrameEvents.OnPostUpdate -= OnPostUpdate;
+            _panel?.Close();
+            _panel?.UnregisterDrawCallback();
+            _panel = null;
             Current = null;
             InstanceLog = null;
             try
@@ -73,6 +88,60 @@ namespace FullMapTeleport
 
             _harmony = null;
             _patchesApplied = false;
+        }
+
+        public void OnConfigChanged()
+        {
+            if (_configRevealAlreadyHandled())
+                return;
+
+            if (Current != null && Current.RevealFullMap)
+            {
+                _revealRequestHandled = true;
+                RevealFullMap();
+                Current.RevealFullMap = false;
+                try { Current.Save(); } catch (Exception ex) { _log?.Warn($"Failed to save reveal action reset: {ex.Message}"); }
+            }
+            else
+            {
+                _revealRequestHandled = false;
+            }
+        }
+
+        private bool _configRevealAlreadyHandled()
+        {
+            return _revealRequestHandled && (Current == null || !Current.RevealFullMap);
+        }
+
+        private void TogglePanel()
+        {
+            if (Main.gameMenu || Main.netMode == 2)
+                return;
+            _panel?.Toggle();
+        }
+
+        private void RevealFullMap()
+        {
+            if (Main.gameMenu || Main.netMode == 2 || Main.Map == null)
+                return;
+
+            try
+            {
+                MapRevealBounds bounds = MapRevealMath.GetBounds(Main.maxTilesX, Main.maxTilesY, WorldMap.BlackEdgeWidth);
+                for (int x = bounds.Left; x < bounds.RightExclusive; x++)
+                {
+                    for (int y = bounds.Top; y < bounds.BottomExclusive; y++)
+                        Main.Map.Update(x, y, byte.MaxValue);
+                }
+
+                Main.refreshMap = true;
+                Main.Map.Save();
+                _log?.Info("Full map revealed at maximum brightness.");
+            }
+            catch (Exception ex)
+            {
+                _log?.Warn($"Full map reveal failed: {ex.Message}");
+            }
         }
 
         private static bool IsEnabled()
@@ -162,10 +231,7 @@ namespace FullMapTeleport
                 !TeleportMath.IsInstantReturnItem(__0.type))
                 return;
 
-            int triggerTime = Math.Max(1, __0.useTime / 2);
-            __instance.itemTime = triggerTime;
-            if (__instance.itemAnimation > 1)
-                __instance.itemAnimation = 1;
+            __instance.itemTime = TeleportMath.GetInstantReturnTriggerTime(__0.useTime);
         }
 
         private static void InstantReturnItemServerPostfix(object __instance, object __0)
@@ -180,10 +246,7 @@ namespace FullMapTeleport
                     return;
 
                 int useTime = ReadIntMember(__0, "useTime");
-                SetIntMember(__instance, "itemTime", Math.Max(1, useTime / 2));
-                int itemAnimation = ReadIntMember(__instance, "itemAnimation");
-                if (itemAnimation > 1)
-                    SetIntMember(__instance, "itemAnimation", 1);
+                SetIntMember(__instance, "itemTime", TeleportMath.GetInstantReturnTriggerTime(useTime));
             }
             catch (Exception ex)
             {

@@ -1,9 +1,9 @@
 {
   "id": "full-map-teleport",
   "name": "Full Map Teleport",
-  "version": "1.0.2",
+  "version": "1.1.1",
   "author": "ABKQPO",
-  "description": "Right-click the full-screen map to teleport. Pylon and same-team map teleports ignore vanilla restrictions.",
+  "description": "Right-click the full-screen map to teleport, bypass pylon and team restrictions, and reveal the full map at maximum brightness.",
   "entry_dll": "FullMapTeleport.dll",
   "multiplayer": "optional"
 }

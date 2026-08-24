@@ -105,6 +105,14 @@ namespace FullMapTeleport
             }
         }
 
+        public static int GetInstantReturnTriggerTime(int useTime)
+        {
+            // ItemCheck decrements itemTime before it evaluates the mirror and
+            // shellphone teleport branch. Start one frame above the half-way
+            // trigger so that branch runs in the same use frame.
+            return Math.Max(2, useTime / 2 + 1);
+        }
+
         public static float PylonWorldY(int tileY, float heightOffset)
         {
             return tileY * 16f - heightOffset;

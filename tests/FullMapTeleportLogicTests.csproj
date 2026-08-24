@@ -7,5 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\TeleportMath.cs" Link="TeleportMath.cs" />
+    <Compile Include="..\MapRevealMath.cs" Link="MapRevealMath.cs" />
   </ItemGroup>
 </Project>

@@ -11,6 +11,13 @@ static class Program
             throw new InvalidOperationException($"Expected {expected}, got {actual}");
     }
 
+    private static void AssertEqual(int expected, int actual, string name)
+    {
+        _checks++;
+        if (expected != actual)
+            throw new InvalidOperationException($"Expected {expected}, got {actual}: {name}");
+    }
+
     private static void Main()
     {
         AssertEqual(new TilePoint(100, 80),
@@ -24,6 +31,10 @@ static class Program
         AssertEqual(new TilePoint(199, 149),
             TeleportMath.Clamp(new TilePoint(999, 999), 10, 200, 10, 150));
 
+        var reveal = MapRevealMath.GetBounds(8400, 2400, 40);
+        AssertEqual(new TilePoint(40, 40), new TilePoint(reveal.Left, reveal.Top));
+        AssertEqual(new TilePoint(8360, 2360), new TilePoint(reveal.RightExclusive, reveal.BottomExclusive));
+
         AssertTrue(TeleportMath.IsInstantReturnItem(50), "magic mirror is instant");
         AssertTrue(TeleportMath.IsInstantReturnItem(3199), "ice mirror is instant");
         AssertTrue(TeleportMath.IsInstantReturnItem(3124), "cell phone is instant");
@@ -32,6 +43,10 @@ static class Program
         AssertTrue(TeleportMath.IsInstantReturnItem(5360), "ocean shellphone is instant");
         AssertTrue(TeleportMath.IsInstantReturnItem(5361), "hell shellphone is instant");
         AssertFalse(TeleportMath.IsInstantReturnItem(2350), "recall potion keeps vanilla timing");
+        AssertEqual(46, TeleportMath.GetInstantReturnTriggerTime(90),
+            "instant return trigger survives the vanilla item-time decrement");
+        AssertEqual(2, TeleportMath.GetInstantReturnTriggerTime(1),
+            "instant return trigger keeps a positive item time");
 
         var playerPosition = TeleportMath.MapTileToPlayerTopLeft(new TilePoint(100, 80), 20, 42);
         AssertNear(1598f, playerPosition.X, "player X is centered on the map tile");
