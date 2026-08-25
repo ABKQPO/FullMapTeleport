@@ -5,5 +5,6 @@
   "author": "ABKQPO",
   "description": "Right-click the full-screen map to teleport, bypass pylon and team restrictions, and reveal the full map at maximum brightness.",
   "entry_dll": "FullMapTeleport.dll",
+  "icon": "icon.png",
   "multiplayer": "optional"
 }

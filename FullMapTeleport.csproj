@@ -51,6 +51,6 @@
   <Target Name="PackageFullMapTeleport" AfterTargets="Build" Condition="'$(DesignTimeBuild)' != 'true'">
     <MakeDir Directories="build\package\full-map-teleport" />
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="build\package\full-map-teleport" />
-    <Copy SourceFiles="manifest.json;README.md" DestinationFolder="build\package\full-map-teleport" />
+    <Copy SourceFiles="manifest.json;README.md;LICENSE;icon.png" DestinationFolder="build\package\full-map-teleport" />
   </Target>
 </Project>
